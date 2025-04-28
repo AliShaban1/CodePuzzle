@@ -1,15 +1,61 @@
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { shuffleArray } from "../lib/utils";
+import { PuzzleBlock } from "@/types/puzzle";
 
 export default function Home() {
   const router = useRouter();
   const [task, setTask] = useState("");
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
+    // Check if task is not empty, otheriwse alert
     if (task.trim()) {
       // Save the task to be solved
       localStorage.setItem("task", task);
-      router.push("/puzzle");
+      // Check if apiKey is set
+      let apiKey = localStorage.getItem("apiKey");
+      if (!apiKey) {
+        // Ask user for API key
+        apiKey = window.prompt("Please enter your OpenAI API Key:");
+        if (!apiKey) {
+          alert("API key is required to generate the puzzle.");
+          return;
+        }
+        localStorage.setItem("apiKey", apiKey);
+      }
+      // Call the chat api with the task and redirect to the puzzle page
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            taskDescription: task,
+            apiKey: apiKey,
+          }),
+        });
+        const data = await response.json();
+        const puzzleBlocksRaw = JSON.parse(data.result);
+        // Add IDs
+        const puzzleBlocks: PuzzleBlock[] = puzzleBlocksRaw.map(
+          (block: any, index: number) => ({
+            id: index,
+            code: block.code,
+            explanation: block.explanation,
+            indentationLevel: block.indentationLevel,
+          })
+        );
+        localStorage.setItem("correctBlocks", JSON.stringify(puzzleBlocks));
+        localStorage.setItem(
+          "puzzleBlocks",
+          JSON.stringify(shuffleArray(puzzleBlocks))
+        );
+        router.push("/puzzle");
+      } catch (error) {
+        console.error("Error generating puzzle:", error);
+        alert("Error generating puzzle. Please try again.");
+      }
     } else {
       alert("Please enter a task description.");
     }
