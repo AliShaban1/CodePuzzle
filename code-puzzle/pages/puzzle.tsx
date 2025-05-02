@@ -31,6 +31,10 @@ export default function Puzzle() {
     const puzzles = localStorage.getItem("puzzleBlocks");
     const savedPuzzleBlocks = localStorage.getItem("savedPuzzleBlocks");
     const savedUserBlocks = localStorage.getItem("savedUserBlocks");
+    console.log("savedTask", savedTask);
+    console.log("puzzles", puzzles);
+    console.log("savedPuzzleBlocks", savedPuzzleBlocks);
+    console.log("savedUserBlocks", savedUserBlocks);
 
     if (!savedTask || !puzzles) {
       alert("No puzzle found. Please generate a task first.");
@@ -42,13 +46,17 @@ export default function Puzzle() {
         parsedBlocks = JSON.parse(puzzles);
         setPuzzleBlocks(parsedBlocks);
       }
-      if (savedUserBlocks && savedUserBlocks !== "[]") {
+      if (savedUserBlocks !== null) {
         const parsedUserBlocks = JSON.parse(savedUserBlocks);
         setUserBlocks(parsedUserBlocks);
       }
-      if (savedPuzzleBlocks && savedPuzzleBlocks !== "[]") {
-        const parsedPuzzleBlocks = JSON.parse(savedPuzzleBlocks);
-        setPuzzleBlocks(parsedPuzzleBlocks);
+      if (savedPuzzleBlocks !== null) {
+        if (savedPuzzleBlocks === "complete") {
+          setPuzzleBlocks([]);
+        } else {
+          const parsedPuzzleBlocks = JSON.parse(savedPuzzleBlocks);
+          setPuzzleBlocks(parsedPuzzleBlocks);
+        }
       }
       // only allow indentations up to max correct indentation
       const maxIndent = parsedBlocks.reduce(
@@ -60,8 +68,13 @@ export default function Puzzle() {
   }, [router]);
 
   useEffect(() => {
+    if (userBlocks.length === 0 && puzzleBlocks.length === 0) return;
+    if (puzzleBlocks.length == 0) {
+      localStorage.setItem("savedPuzzleBlocks", "complete");
+    } else {
+      localStorage.setItem("savedPuzzleBlocks", JSON.stringify(puzzleBlocks));
+    }
     localStorage.setItem("savedUserBlocks", JSON.stringify(userBlocks));
-    localStorage.setItem("savedPuzzleBlocks", JSON.stringify(puzzleBlocks));
   }, [userBlocks, puzzleBlocks]);
 
   const handleUndo = () => {
