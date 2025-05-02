@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { CSS } from "@dnd-kit/utilities";
 import { useSortable } from "@dnd-kit/sortable";
 import { PuzzlePieceProps } from "@/types/puzzle";
+import dynamic from "next/dynamic";
+const SafeMonaco = dynamic(() => import("./MonacoEditor"), { ssr: false });
 
 function SortableUserBlock({
   block,
@@ -39,11 +41,10 @@ function SortableUserBlock({
       className="relative group p-4 bg-white rounded shadow text-left font-mono mb-2 cursor-move transition"
     >
       <div className="flex items-center justify-between">
-        <span>{block.code}</span>
-
+        <SafeMonaco value={block.code}></SafeMonaco>
         {/* Question mark icon – only visible on hover of the whole block */}
         <div
-          className="relative ml-2 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          className="relative ml-2 mr-2 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
         >

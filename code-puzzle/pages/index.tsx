@@ -57,6 +57,8 @@ export default function Home() {
         );
         const shuffledBlocks = shuffleArray(puzzleBlocks);
         localStorage.setItem("puzzleBlocks", JSON.stringify(shuffledBlocks));
+        localStorage.removeItem("savedUserBlocks");
+        localStorage.removeItem("savedPuzzleBlocks");
         router.push("/puzzle");
       } catch (error) {
         console.error("Error generating puzzle:", error);

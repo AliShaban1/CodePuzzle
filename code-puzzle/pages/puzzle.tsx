@@ -5,6 +5,8 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { DndContext, DragEndEvent, DragMoveEvent } from "@dnd-kit/core";
 import PuzzlePiece from "@/components/PuzzlePiece";
 import UserAnswerArea from "@/components/AnswerArea";
+import dynamic from "next/dynamic";
+
 export default function Puzzle() {
   const router = useRouter();
   const [task, setTask] = useState("");
@@ -23,17 +25,31 @@ export default function Puzzle() {
   const [hintedBlockId, setHintedBlockId] = useState<string | null>(null);
   const [isHintDisabled, setIsHintDisabled] = useState(false);
   const [incorrectBlocks, setIncorrectBlocks] = useState<PuzzleBlock[]>([]);
+
   useEffect(() => {
     const savedTask = localStorage.getItem("task");
-    const savedBlocks = localStorage.getItem("puzzleBlocks");
+    const puzzles = localStorage.getItem("puzzleBlocks");
+    const savedPuzzleBlocks = localStorage.getItem("savedPuzzleBlocks");
+    const savedUserBlocks = localStorage.getItem("savedUserBlocks");
 
-    if (!savedTask || !savedBlocks) {
+    if (!savedTask || !puzzles) {
       alert("No puzzle found. Please generate a task first.");
       router.push("/");
     } else {
       setTask(savedTask);
-      const parsedBlocks = JSON.parse(savedBlocks);
-      setPuzzleBlocks(parsedBlocks);
+      let parsedBlocks: PuzzleBlock[] = [];
+      if (puzzles) {
+        parsedBlocks = JSON.parse(puzzles);
+        setPuzzleBlocks(parsedBlocks);
+      }
+      if (savedUserBlocks && savedUserBlocks !== "[]") {
+        const parsedUserBlocks = JSON.parse(savedUserBlocks);
+        setUserBlocks(parsedUserBlocks);
+      }
+      if (savedPuzzleBlocks && savedPuzzleBlocks !== "[]") {
+        const parsedPuzzleBlocks = JSON.parse(savedPuzzleBlocks);
+        setPuzzleBlocks(parsedPuzzleBlocks);
+      }
       // only allow indentations up to max correct indentation
       const maxIndent = parsedBlocks.reduce(
         (max: number, block: PuzzleBlock) => Math.max(max, block.indentation),
@@ -42,6 +58,11 @@ export default function Puzzle() {
       setMaxIndentation(maxIndent);
     }
   }, [router]);
+
+  useEffect(() => {
+    localStorage.setItem("savedUserBlocks", JSON.stringify(userBlocks));
+    localStorage.setItem("savedPuzzleBlocks", JSON.stringify(puzzleBlocks));
+  }, [userBlocks, puzzleBlocks]);
 
   const handleUndo = () => {
     if (history.length === 0) return;
@@ -71,11 +92,10 @@ export default function Puzzle() {
         e.preventDefault();
         handleUndo();
       }
-
       // Redo: Ctrl+Y or Cmd+Shift+Z
       if (
         (e.ctrlKey && e.key === "y") ||
-        (isMac && e.metaKey && e.shiftKey && e.key === "z") // Mac redo
+        (isMac && e.metaKey && e.shiftKey && e.key === "z")
       ) {
         e.preventDefault();
         handleRedo();
@@ -133,7 +153,7 @@ export default function Puzzle() {
     });
 
     if (incorrectBlocks.length === 0 && puzzleBlocks.length === 0) {
-      alert("✅ All blocks are correctly placed!");
+      alert("All blocks are correctly placed!");
       return;
     } else if (incorrectBlocks.length === 0) {
       alert(
@@ -291,30 +311,35 @@ export default function Puzzle() {
       </DndContext>
 
       {/* CONTROL BUTTONS */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-4 mt-4">
         <button
           onClick={handleUndo}
-          className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg shadow hover:bg-gray-300 transition"
         >
-          Undo
+          ⬅️ Undo
         </button>
         <button
           onClick={handleRedo}
-          className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg shadow hover:bg-gray-300 transition"
         >
-          Redo
+          ➡️ Redo
         </button>
         <button
           onClick={handleCheckAnswer}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          className="px-5 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition"
         >
-          Check Answer
+          ✅ Check Answer
         </button>
         <button
           onClick={handleHint}
-          className="px-4 py-2 bg-yellow-400 rounded hover:bg-yellow-500"
+          className={`px-5 py-2 rounded-lg shadow transition ${
+            isHintDisabled
+              ? "bg-yellow-300 text-yellow-800 cursor-not-allowed"
+              : "bg-yellow-400 text-black hover:bg-yellow-500"
+          }`}
+          disabled={isHintDisabled}
         >
-          {isHintDisabled ? "Hint Disabled" : "Get Hint"}
+          💡 {isHintDisabled ? "Hint Disabled" : "Get Hint"}
         </button>
       </div>
     </main>
