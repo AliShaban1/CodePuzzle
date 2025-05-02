@@ -5,7 +5,6 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { DndContext, DragEndEvent, DragMoveEvent } from "@dnd-kit/core";
 import PuzzlePiece from "@/components/PuzzlePiece";
 import UserAnswerArea from "@/components/AnswerArea";
-
 export default function Puzzle() {
   const router = useRouter();
   const [task, setTask] = useState("");
@@ -62,6 +61,31 @@ export default function Puzzle() {
     setPuzzleBlocks(next.puzzle);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      console.log(navigator.userAgent);
+      const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+
+      // Undo
+      if ((e.ctrlKey || (isMac && e.metaKey)) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+
+      // Redo: Ctrl+Y or Cmd+Shift+Z
+      if (
+        (e.ctrlKey && e.key === "y") ||
+        (isMac && e.metaKey && e.shiftKey && e.key === "z") // Mac redo
+      ) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
   const handleCheckAnswer = () => {
     // Check the correctness of each block:
     // 1. Each block needs to be in the correct indentation level
@@ -108,8 +132,13 @@ export default function Puzzle() {
       );
     });
 
-    if (incorrectBlocks.length === 0) {
+    if (incorrectBlocks.length === 0 && puzzleBlocks.length === 0) {
       alert("✅ All blocks are correctly placed!");
+      return;
+    } else if (incorrectBlocks.length === 0) {
+      alert(
+        "Some blocks are still in the puzzle area. Please move them to your answer area."
+      );
       return;
     }
     // Choose a random incorrect block to hint

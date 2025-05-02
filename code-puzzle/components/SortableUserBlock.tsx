@@ -22,10 +22,10 @@ function SortableUserBlock({
   const [showTooltip, setShowTooltip] = useState(false);
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? "transform 50ms ease-out" : transition,
+    transition: transform ? "transform 50ms ease-out" : transition,
     marginLeft: `${block.currentIndentation * 2}rem`,
-    zIndex: 1000,
-    position: hinted ? "relative" : "static",
+    zIndex: isDragging ? 1000 : 1,
+    position: isDragging || hinted ? "relative" : "static",
     border: hinted || incorrect ? "2px solid rgba(255, 0, 0, 0.5)" : undefined,
   };
 
@@ -73,13 +73,13 @@ function SortableUserBlock({
             </div>
           )}
           {/* Arrow Down for misplaced vertical position */}
-          {currentIndex && block.id > currentIndex && (
+          {typeof currentIndex == "number" && block.id > currentIndex && (
             <div className="absolute bottom-[-1.5rem] left-1/2 transform -translate-x-1/2 text-red-500 text-xl">
               ↓
             </div>
           )}
           {/* Arrow Up for block too low */}
-          {currentIndex && block.id < currentIndex && (
+          {typeof currentIndex == "number" && block.id < currentIndex && (
             <div className="absolute top-[-1.5rem] left-1/2 transform -translate-x-1/2 text-red-500 text-xl">
               ↑
             </div>
