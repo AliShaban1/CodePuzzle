@@ -1,12 +1,13 @@
 import { useDraggable } from "@dnd-kit/core";
 import { PuzzlePieceProps } from "@/types/puzzle";
+import { useState } from "react";
 
 export default function PuzzlePiece({ block }: PuzzlePieceProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: block.id.toString(),
     });
-
+  const [showTooltip, setShowTooltip] = useState(false);
   const style: React.CSSProperties = {
     transform: transform
       ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
@@ -23,9 +24,26 @@ export default function PuzzlePiece({ block }: PuzzlePieceProps) {
       {...attributes}
       {...listeners}
       style={style}
-      className="p-4 bg-white mb-2 rounded shadow text-left font-mono cursor-pointer hover:bg-gray-200 transition"
+      className="p-4 group bg-white mb-2 rounded shadow text-left font-mono cursor-pointer hover:bg-gray-200 transition"
     >
-      {block.code}
+      <div className="flex items-center justify-between">
+        <span>{block.code}</span>
+
+        {/* Question mark icon – only visible on hover of the whole block */}
+        <div
+          className="relative ml-2 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          <span className="text-lg font-bold cursor-help">?</span>
+
+          {showTooltip && (
+            <div className="absolute top-full left-0 mt-1 w-64 bg-gray-800 text-white text-sm p-2 rounded shadow-lg z-50">
+              {block.explanation}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

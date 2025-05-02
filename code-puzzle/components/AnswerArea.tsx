@@ -11,6 +11,8 @@ export default function UserAnswerArea({
   userBlocks,
   maxIndentationLevel,
   highlightedIndent,
+  hintedBlockId,
+  incorrectBlocks,
 }: UserAnswerAreaProps) {
   const { setNodeRef, over } = useDroppable({
     id,
@@ -27,20 +29,20 @@ export default function UserAnswerArea({
       </h2>
 
       {/* BACKGROUND ZONES FOR INDENTATION */}
-      <div className="absolute inset-0 flex pointer-events-none">
+      <div className="absolute inset-0 flex pointer-events-none z-0">
         {Array.from({ length: maxIndentationLevel }).map((_, index) => (
           <div
             key={index}
             className={`w-[40px] ${
               highlightedIndent !== null && index >= highlightedIndent && over
-                ? "bg-gray-200/40"
+                ? "bg-gray-300/40"
                 : ""
             }`}
           />
         ))}
         <div
           className={`flex-1 ${
-            highlightedIndent !== null && over ? "bg-gray-200/40" : ""
+            highlightedIndent !== null && over ? "bg-gray-300/40" : ""
           }`}
         />
       </div>
@@ -50,8 +52,14 @@ export default function UserAnswerArea({
         items={userBlocks.map((block) => block.id.toString())}
         strategy={verticalListSortingStrategy}
       >
-        {userBlocks.map((block) => (
-          <SortableUserBlock key={block.id} block={block} />
+        {userBlocks.map((block, index) => (
+          <SortableUserBlock
+            key={block.id}
+            block={block}
+            hinted={JSON.stringify(block.id) == hintedBlockId}
+            currentIndex={index}
+            incorrect={incorrectBlocks.includes(block)}
+          />
         ))}
       </SortableContext>
     </div>

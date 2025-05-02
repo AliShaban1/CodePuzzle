@@ -36,6 +36,14 @@ export default function Home() {
           }),
         });
         const data = await response.json();
+        let cleanResult = data.result;
+        if (cleanResult.startsWith("```")) {
+          cleanResult = cleanResult
+            .replace(/```(json)?/, "")
+            .replace(/```/, "")
+            .trim();
+        }
+
         const puzzleBlocksRaw = JSON.parse(data.result);
         // Add IDs
         const puzzleBlocks: PuzzleBlock[] = puzzleBlocksRaw.map(
@@ -43,14 +51,12 @@ export default function Home() {
             id: index,
             code: block.code,
             explanation: block.explanation,
-            indentationLevel: block.indentationLevel,
+            indentation: block.indentation,
+            currentIndentation: 0,
           })
         );
-        localStorage.setItem("correctBlocks", JSON.stringify(puzzleBlocks));
-        localStorage.setItem(
-          "puzzleBlocks",
-          JSON.stringify(shuffleArray(puzzleBlocks))
-        );
+        const shuffledBlocks = shuffleArray(puzzleBlocks);
+        localStorage.setItem("puzzleBlocks", JSON.stringify(shuffledBlocks));
         router.push("/puzzle");
       } catch (error) {
         console.error("Error generating puzzle:", error);

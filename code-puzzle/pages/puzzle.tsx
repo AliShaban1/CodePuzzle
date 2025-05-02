@@ -15,7 +15,15 @@ export default function Puzzle() {
   const [highlightedIndent, setHighlightedIndent] = useState<number | null>(
     null
   );
-
+  const [history, setHistory] = useState<
+    { user: PuzzleBlock[]; puzzle: PuzzleBlock[] }[]
+  >([]);
+  const [redoStack, setRedoStack] = useState<
+    { user: PuzzleBlock[]; puzzle: PuzzleBlock[] }[]
+  >([]);
+  const [hintedBlockId, setHintedBlockId] = useState<string | null>(null);
+  const [isHintDisabled, setIsHintDisabled] = useState(false);
+  const [incorrectBlocks, setIncorrectBlocks] = useState<PuzzleBlock[]>([]);
   useEffect(() => {
     const savedTask = localStorage.getItem("task");
     const savedBlocks = localStorage.getItem("puzzleBlocks");
@@ -36,22 +44,84 @@ export default function Puzzle() {
     }
   }, [router]);
 
-  useEffect(() => {
-    console.log("User Blocks Updated", userBlocks);
-  }, [userBlocks]);
-
-  const handleUndo = () => {};
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const prev = history[history.length - 1];
+    setHistory((h) => h.slice(0, -1));
+    setRedoStack((r) => [...r, { user: userBlocks, puzzle: puzzleBlocks }]);
+    setUserBlocks(prev.user);
+    setPuzzleBlocks(prev.puzzle);
+  };
 
   const handleRedo = () => {
-    console.log("Redo action to be implemented");
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    setRedoStack((r) => r.slice(0, -1));
+    setHistory((prev) => [...prev, { user: userBlocks, puzzle: puzzleBlocks }]);
+    setUserBlocks(next.user);
+    setPuzzleBlocks(next.puzzle);
   };
 
   const handleCheckAnswer = () => {
-    console.log("Check Answer action to be implemented");
+    // Check the correctness of each block:
+    // 1. Each block needs to be in the correct indentation level
+    // 2. Each block needs to be in the correct position
+    // 3. Duplicate blocks can replace each other
+    const incorrectBlocks = userBlocks.filter((block, index) => {
+      const correctBlock = userBlocks.find((b) => b.id === index);
+      return (
+        block != correctBlock &&
+        (block.code != correctBlock?.code ||
+          block.currentIndentation != correctBlock?.indentation)
+      );
+    });
+    if (puzzleBlocks.length > 0) {
+      alert(
+        "Some blocks are still in the puzzle area. Please move them to your answer area."
+      );
+      return;
+    }
+    if (incorrectBlocks.length === 0) {
+      alert("✅ All blocks are correctly placed!");
+    } else {
+      setIncorrectBlocks(incorrectBlocks);
+      setTimeout(() => {
+        setIncorrectBlocks([]);
+      }, 5000);
+      alert("Some blocks are incorrectly placed.");
+    }
   };
 
   const handleHint = () => {
-    console.log("Hint action to be implemented");
+    if (isHintDisabled) return;
+
+    const incorrectBlocks = userBlocks.filter((block, index) => {
+      let correctBlock = userBlocks.find((b) => b.id === index);
+      if (!correctBlock) {
+        correctBlock = puzzleBlocks.find((b) => b.id === index);
+      }
+      return (
+        (block.id !== index ||
+          block.currentIndentation !== block.indentation) &&
+        (block.code !== correctBlock?.code ||
+          block.currentIndentation !== correctBlock?.indentation)
+      );
+    });
+
+    if (incorrectBlocks.length === 0) {
+      alert("✅ All blocks are correctly placed!");
+      return;
+    }
+    // Choose a random incorrect block to hint
+    const incorrectIndex = Math.floor(Math.random() * incorrectBlocks.length);
+    const hintBlock = incorrectBlocks[incorrectIndex];
+    setHintedBlockId(hintBlock.id.toString());
+
+    setIsHintDisabled(true);
+    setTimeout(() => {
+      setHintedBlockId(null);
+      setIsHintDisabled(false);
+    }, 10000);
   };
 
   const handleDragMove = (event: DragMoveEvent) => {
@@ -78,6 +148,7 @@ export default function Puzzle() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setHighlightedIndent(null);
+
     const { active, over } = event;
     if (!over) return;
 
@@ -112,6 +183,11 @@ export default function Puzzle() {
         (block) => block.id.toString() === overId
       );
       if (newIndex === -1) {
+        setHistory((prev) => [
+          ...prev,
+          { user: userBlocks, puzzle: puzzleBlocks },
+        ]);
+        setRedoStack([]); // clear redo stack on new action
         setUserBlocks((prev) => [
           ...prev,
           {
@@ -132,6 +208,7 @@ export default function Puzzle() {
       );
     } else if (draggedFromAnswer) {
       // Rearranging in the answer area
+
       const oldIndex = userBlocks.findIndex(
         (block) => block.id.toString() === activeId
       );
@@ -145,6 +222,11 @@ export default function Puzzle() {
           ...updated[newIndex],
           currentIndentation: calculatedIndentation,
         };
+        setHistory((prev) => [
+          ...prev,
+          { user: userBlocks, puzzle: puzzleBlocks },
+        ]);
+        setRedoStack([]); // clear redo stack on new action
         setUserBlocks(updated);
       }
     }
@@ -156,7 +238,7 @@ export default function Puzzle() {
       <p className="mb-8 text-gray-600 text-center max-w-2xl">{task}</p>
 
       <DndContext onDragEnd={handleDragEnd} onDragMove={handleDragMove}>
-        <div className="flex flex-col md:flex-row w-full max-w-5xl gap-8 mb-8 z-10 overflow-x-auto">
+        <div className="flex flex-col md:flex-row w-full max-w-5xl gap-8 mb-8 z-0">
           {/* CODE PUZZLES */}
           <div className="flex-1 bg-gray-100 p-4 rounded">
             <h2 className="text-xl font-bold text-center mb-4">
@@ -173,6 +255,8 @@ export default function Puzzle() {
             userBlocks={userBlocks}
             maxIndentationLevel={maxIndentation}
             highlightedIndent={highlightedIndent}
+            hintedBlockId={hintedBlockId}
+            incorrectBlocks={incorrectBlocks}
           />
         </div>
       </DndContext>
@@ -180,28 +264,28 @@ export default function Puzzle() {
       {/* CONTROL BUTTONS */}
       <div className="flex gap-4">
         <button
-          onClick={() => console.log("Undo action")}
+          onClick={handleUndo}
           className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
         >
           Undo
         </button>
         <button
-          onClick={() => console.log("Redo action")}
+          onClick={handleRedo}
           className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
         >
           Redo
         </button>
         <button
-          onClick={() => console.log("Check Answer action")}
+          onClick={handleCheckAnswer}
           className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
         >
           Check Answer
         </button>
         <button
-          onClick={() => console.log("Hint action")}
+          onClick={handleHint}
           className="px-4 py-2 bg-yellow-400 rounded hover:bg-yellow-500"
         >
-          Hint
+          {isHintDisabled ? "Hint Disabled" : "Get Hint"}
         </button>
       </div>
     </main>

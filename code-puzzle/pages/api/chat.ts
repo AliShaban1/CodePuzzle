@@ -36,12 +36,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     {
       "code": "the code line or snippet here",
       "explanation": "what this line does",
-      "indentationLevel": 0
+      "indentation": a number starting from 0 to show indentation level
     },
     ...
   ]
-
-  No extra text. Only pure JSON.
+    **Important Instructions:**
+  - Only output pure JSON.
+  - Do not include any markdown formatting (no triple backticks like the tripple back quotes json).
+  - Do not explain anything before or after the JSON.
+  - Just output the raw JSON directly.
   `;
 
   try {
@@ -54,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       temperature: 0.4,
       max_tokens: 1000,
     });
-
+    console.log("OpenAI API Response:", completion.choices[0].message.content);
     res.status(200).json({ result: completion.choices[0].message.content });
   } catch (error: any) {
     console.error("OpenAI API Error:", error);
