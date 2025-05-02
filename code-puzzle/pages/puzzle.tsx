@@ -127,7 +127,7 @@ export default function Puzzle() {
     const incorrectBlocks = userBlocks.filter((block, index) => {
       const correctBlock = userBlocks.find((b) => b.id === index);
       return (
-        block != correctBlock &&
+        (block.id != index || block.currentIndentation != block.indentation) &&
         (block.code != correctBlock?.code ||
           block.currentIndentation != correctBlock?.indentation)
       );
